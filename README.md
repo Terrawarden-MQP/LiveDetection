@@ -1,4 +1,6 @@
-Intel Realsense Viewer Install Guide:
+## Generic Setup Info:
+
+Intel Realsense Viewer Install Guide (For laptops):
 - https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md
 
 ROS 2 Install Guide:
@@ -19,16 +21,18 @@ Vision Stack setup repo setup (after ROS2 Workspace has been set up)
 3. `cd TerrawardenVision`
 4. `pip install -r requirements.txt`
 
-Enable SSH on Jetson
-1.  sudo apt install ufw
-2.  sudo systemctl enable ssh
-3.  sudo systemctl start ssh
-4.  sudo ufw allow ssh
-
 ## Jetson Setup
+
 1.  Flash with Jetson 6.0
-2.  Install RealSense Drivers
-   	https://github.com/IntelRealSense/librealsense/blob/master/doc/installation_jetson.md
-    	https://github.com/IntelRealSense/realsense_mipi_platform_driver
-3.  Check install by running sudo apt-cache show nvidia-jetpack
+   - https://wiki.seeedstudio.com/reComputer_J4012_Flash_Jetpack/
+2.  Check install by running `sudo apt-cache show nvidia-jetpack`
+3.  Install RealSense Drivers
+   - https://github.com/IntelRealSense/librealsense/blob/master/doc/installation_jetson.md
+   - https://github.com/IntelRealSense/realsense_mipi_platform_driver
 4.  Modify timeout to 30 minutes gsettings set org.gnome.desktop.session idle-delay 1800
+
+### Enable SSH on Jetson
+1.  `sudo apt install ufw`
+2.  `sudo systemctl enable ssh`
+3.  `sudo systemctl start ssh`
+4.  `sudo ufw allow ssh`
