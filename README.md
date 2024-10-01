@@ -26,13 +26,27 @@ Vision Stack setup repo setup (after ROS2 Workspace has been set up)
 1.  Flash with Jetson 6.0
    - https://wiki.seeedstudio.com/reComputer_J4012_Flash_Jetpack/
 2.  Check install by running `sudo apt-cache show nvidia-jetpack`
+3.  Install Intel RealSense SDK
+   - https://github.com/IntelRealSense/librealsense/blob/master/doc/libuvc_installation.md
+4.  Install `colcon` (if not already installed)
+   - https://colcon.readthedocs.io/en/released/user/installation.html (follow ROS 2 steps)
+5.  Install ROS RealSense Wrapper
+   - `sudo apt install ros-humble-realsense2-*`
+   - `sudo apt remove ros-humble-librealsense2`
+   - `mkdir -p ~/realsense2_camera/src && cd ~/realsense2_camera/src`
+   - `git clone https://github.com/IntelRealSense/realsense-ros.git -b ros2-master`
+   - `rm -rf realsense2_camera_msgs realsense2_description`
+   - `cd ~/realsense2_camera`
+   - `colcon build --symlink-install`
+
+OMIT
 3.  Install RealSense Drivers
    - https://github.com/IntelRealSense/librealsense/blob/master/doc/installation_jetson.md
    - https://github.com/IntelRealSense/realsense_mipi_platform_driver
-4.  Modify timeout to 30 minutes gsettings set org.gnome.desktop.session idle-delay 1800
 
 ### Enable SSH on Jetson
 1.  `sudo apt install ufw`
 2.  `sudo systemctl enable ssh`
 3.  `sudo systemctl start ssh`
 4.  `sudo ufw allow ssh`
+5.  Modify timeout to 30 minutes `gsettings set org.gnome.desktop.session idle-delay 1800`
