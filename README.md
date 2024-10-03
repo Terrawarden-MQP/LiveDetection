@@ -38,8 +38,13 @@ Vision Stack setup repo setup (after ROS2 Workspace has been set up)
    - `rm -rf realsense2_camera_msgs realsense2_description`
    - `cd ~/realsense2_camera`
    - `colcon build --symlink-install`
+6.  Run i455 with ROS
+   - `ros2 run rviz2 rviz2` and open topic `/camera/camera/depth/color/points`
+   - In folder `realsense2_camera`, run `source install/setup.bash`
+   - `ros2 launch realsense2_camera rs_launch.py depth_module.depth_profile:=480,270,15 depth_module.exposure:=8000 enable_sync:=true pointcloud.enable:=true enable_color:=true initial_reset:=true`
+     (Note: higher resolutions and other configurations may work but are not tested. Some higher resolutions had frame drops in ROS)
 
-OMIT
+FAULTY DRIVERS
 3.  Install RealSense Drivers
    - https://github.com/IntelRealSense/librealsense/blob/master/doc/installation_jetson.md
    - https://github.com/IntelRealSense/realsense_mipi_platform_driver
