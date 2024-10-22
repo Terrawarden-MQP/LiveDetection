@@ -44,6 +44,12 @@ Vision Stack setup repo setup (after ROS2 Workspace has been set up)
    - `ros2 launch realsense2_camera rs_launch.py depth_module.depth_profile:=480,270,15 depth_module.exposure:=8000 enable_sync:=true pointcloud.enable:=true enable_color:=true initial_reset:=true`
      (Note: higher resolutions and other configurations may work but are not tested. Some higher resolutions had frame drops in ROS)
 
+## Package Setup
+1. Install PyTorch w/ CUDA Enabled
+- https://forums.developer.nvidia.com/t/pytorch-for-jetson/72048
+2. Install ROS 2 Vision Messages
+- `sudo apt install ros-humble-vision-msgs`
+
 FAULTY DRIVERS
 3.  Install RealSense Drivers
    - https://github.com/IntelRealSense/librealsense/blob/master/doc/installation_jetson.md
@@ -55,3 +61,6 @@ FAULTY DRIVERS
 3.  `sudo systemctl start ssh`
 4.  `sudo ufw allow ssh`
 5.  Modify timeout to 30 minutes `gsettings set org.gnome.desktop.session idle-delay 1800`
+
+
+https://drive.google.com/drive/folders/1pKn-RifvJGWiOx0ZCRLtCXM5GT5lAluu
