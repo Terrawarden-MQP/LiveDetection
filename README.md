@@ -8,12 +8,6 @@ ROS 2 Install Guide:
 
 ROS 2 Workspace Setup:
 - https://docs.ros.org/en/humble/Tutorials/Beginner-Client-Libraries/Creating-A-Workspace/Creating-A-Workspace.html
-
-Virtual Environment guide (Useful for python version management):
-1. `sudo apt install python3.10-venv`
-2. `python -m venv ~/venv`
-3. `source ~/venv/bin/activate`
-	(Needs to be done every time)
 	
 Vision Stack setup repo setup (after ROS2 Workspace has been set up)
 1. `cd ~/ros2_ws/src`
@@ -41,8 +35,14 @@ Vision Stack setup repo setup (after ROS2 Workspace has been set up)
 6.  Run i455 with ROS
    - `ros2 run rviz2 rviz2` and open topic `/camera/camera/depth/color/points`
    - In folder `realsense2_camera`, run `source install/setup.bash`
-   - `ros2 launch realsense2_camera rs_launch.py depth_module.depth_profile:=480,270,15 depth_module.exposure:=8000 enable_sync:=true pointcloud.enable:=true enable_color:=true initial_reset:=true`
-     (Note: higher resolutions and other configurations may work but are not tested. Some higher resolutions had frame drops in ROS)
+   - `ros2 launch realsense2_camera rs_launch.py depth_module.depth_profile:=480,270,5 depth_module.exposure:=8000 enable_sync:=true pointcloud.enable:=true enable_color:=true initial_reset:=true rgb_camera.color_profile:=1280,720,15`
+     (Note: higher resolutions and other configurations are technically supported, as shown by `rs-enumerate-devices`, but have experimentally been shown to drop frames or stop publishing.)
+7.  Install ROS 2 Real Time Classification and Detection using PyTorch TensorRT
+   - Follow the steps here: `https://github.com/NVIDIA-AI-IOT/ros2_torch_trt`
+   - Note, the following modifications may be needed to fix installing the `torch2trt` dependency:
+      - Ensure `$CUDA_HOME` is set properly in terminal
+      - If `torch` does not show up as being installed in Python properly, modify `cpp_extension.py` (`~/.local/lib/python3.10/site-packages/torch/utils/cpp_extension.py`) so that `CUDA_HOME = _find_cuda_home()` (remove or comment out the rest of the line, `# if torch.cuda._is_compiled() else None`)
+      - If there are permission errors accessing files when installing, run `sudo chown -R USERNAME /usr/local/lib/python3.10/dist-packages/`
 
 ## Package Setup
 1. Install PyTorch w/ CUDA Enabled
