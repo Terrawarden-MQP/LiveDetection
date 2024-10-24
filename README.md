@@ -43,6 +43,8 @@ Vision Stack setup repo setup (after ROS2 Workspace has been set up)
       - Ensure `$CUDA_HOME` is set properly in terminal
       - If `torch` does not show up as being installed in Python properly, modify `cpp_extension.py` (`~/.local/lib/python3.10/site-packages/torch/utils/cpp_extension.py`) so that `CUDA_HOME = _find_cuda_home()` (remove or comment out the rest of the line, `# if torch.cuda._is_compiled() else None`)
       - If there are permission errors accessing files when installing, run `sudo chown -R USERNAME /usr/local/lib/python3.10/dist-packages/`
+8. Validate install by testing the live_detectors
+      - MobileNET Pretrained model found at: https://drive.google.com/drive/folders/1pKn-RifvJGWiOx0ZCRLtCXM5GT5lAluu
 
 ## Package Setup
 1. Install PyTorch w/ CUDA Enabled
@@ -62,5 +64,7 @@ FAULTY DRIVERS
 4.  `sudo ufw allow ssh`
 5.  Modify timeout to 30 minutes `gsettings set org.gnome.desktop.session idle-delay 1800`
 
-
-https://drive.google.com/drive/folders/1pKn-RifvJGWiOx0ZCRLtCXM5GT5lAluu
+# Running our code
+1. `colcon build`
+2. `source ~/Desktop/ros_ws/install/setup.bash`
+3. `ros2 launch joisie_vision live_detect.launch.py`
