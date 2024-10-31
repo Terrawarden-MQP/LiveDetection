@@ -68,3 +68,8 @@ FAULTY DRIVERS
 1. `colcon build`
 2. `source ~/Desktop/ros_ws/install/setup.bash`
 3. `ros2 launch joisie_vision live_detect.launch.py`
+
+## DATASET
+We found this boi, good enough for now lmao
+- https://github.com/PUTvision/UAVVaste
+Wrote code for data augmentation as well - with 10 variants per image of augmentation, that's 7,720 images with 37,180 annotations, which should be more than good enough.
