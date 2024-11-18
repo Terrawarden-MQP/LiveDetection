@@ -26,16 +26,23 @@ class Predictor:
 
         self.timer = Timer()
 
-    def predict(self, image, top_k=-1, prob_threshold=None):
+    def predict(self, image, top_k=-1, prob_threshold=None, no_grad=True):
         cpu_device = torch.device("cpu")
         height, width, _ = image.shape
         image = self.transform(image)
         images = image.unsqueeze(0)
         images = images.to(self.device)
-        with torch.no_grad():
+        if no_grad:
+            # Runs much faster with no grad
+            with torch.no_grad():
+                self.timer.start()
+                scores, boxes = self.net.forward(images)
+                print("Inference time: ", self.timer.end())
+        else:
+            # Run with gradient for training
             self.timer.start()
             scores, boxes = self.net.forward(images)
-            print("Inference time: ", self.timer.end())
+            print("Inference time (w/ gradient): ", self.timer.end())
         boxes = boxes[0]
         scores = scores[0]
         if not prob_threshold:
@@ -64,8 +71,10 @@ class Predictor:
         if not picked_box_probs:
             return torch.tensor([]), torch.tensor([]), torch.tensor([])
         picked_box_probs = torch.cat(picked_box_probs)
+        # dimensions are initially encoded as fractions of the height/width?
         picked_box_probs[:, 0] *= width
         picked_box_probs[:, 1] *= height
         picked_box_probs[:, 2] *= width
         picked_box_probs[:, 3] *= height
+        #     bounding box dimensions,         labels                  probabilities
         return picked_box_probs[:, :4], torch.tensor(picked_labels), picked_box_probs[:, 4]

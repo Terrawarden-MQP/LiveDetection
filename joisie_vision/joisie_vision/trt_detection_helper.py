@@ -95,7 +95,6 @@ class TRTDetectionNode(Node):
         except CvBridgeError as e:
           print(e)
 
-        
         image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
         self.timer.start()
         boxes, labels, probs = self.predictor.predict(image, 10, 0.4)
