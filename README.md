@@ -60,12 +60,12 @@ FAULTY DRIVERS
 4. Install Intel Wifi Driver (hotfix for Jetpack 6.0 kernel 5.15.136-tegra)
    - Download backports-5.15.148-1.tar.xz from https://cdn.kernel.org/pub/linux/kernel/projects/backports/stable/v5.15.148/
    - `tar Jxfv backports-5.15.148-1.tar.xz`
-   - `cd backports-5.15.81-1.tar.xz`
+   - `cd backports-5.15.148-1.tar.xz`
    - `make defconfig-iwlwifi`
    - `make -j8`
    - `sudo make install`
    - reboot the system
-   - add a line at the end of `sudo nano /etc/initramfs-tools/modules` to include the `iwlwifi`
+   - add a line at the end of `sudo nano /etc/initramfs-tools/modules` to be the `iwlwifi`
    - `sudo update-initramfs -u` to update the interfaces
    - `sudo reboot` or power off, unplug, wait 5 seconds, plug back in
 
