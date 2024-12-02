@@ -1,6 +1,6 @@
 import numpy as np
 
-from trt_live_detector.box_utils import SSDSpec, SSDBoxSizes, generate_ssd_priors
+from joisie_vision.box_utils import SSDSpec, SSDBoxSizes, generate_ssd_priors
 
 
 image_size = 300

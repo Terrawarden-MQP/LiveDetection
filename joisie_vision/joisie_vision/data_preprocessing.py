@@ -1,4 +1,4 @@
-from trt_live_detector.transforms import *
+from joisie_vision.transforms import *
 
 
 class TrainAugmentation:

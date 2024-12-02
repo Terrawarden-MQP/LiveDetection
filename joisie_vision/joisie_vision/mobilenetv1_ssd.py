@@ -1,10 +1,10 @@
 import torch
 from torch.nn import Conv2d, Sequential, ModuleList, ReLU
-from trt_live_detector.mobilenet import MobileNetV1
+from joisie_vision.mobilenet import MobileNetV1
 
-from trt_live_detector.ssd import SSD
-from trt_live_detector.predictor import Predictor
-import trt_live_detector.mobilenetv1_ssd_config as config
+from joisie_vision.ssd import SSD
+from joisie_vision.predictor import Predictor
+import joisie_vision.mobilenetv1_ssd_config as config
 
 
 def create_mobilenetv1_ssd(num_classes, is_test=False):

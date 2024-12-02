@@ -1,8 +1,8 @@
 import torch
 
-from trt_live_detector import box_utils
-from trt_live_detector.data_preprocessing import PredictionTransform
-from trt_live_detector.misc import Timer
+from joisie_vision import box_utils
+from joisie_vision.data_preprocessing import PredictionTransform
+from joisie_vision.misc import Timer
 
 
 class Predictor:

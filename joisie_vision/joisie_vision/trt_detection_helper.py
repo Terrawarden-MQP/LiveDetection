@@ -17,8 +17,8 @@ from std_msgs.msg import String
 from vision_msgs.msg import ObjectHypothesisWithPose, BoundingBox2D, Detection2D, Detection2DArray
 from cv_bridge import CvBridge, CvBridgeError
 
-from live_detection.mobilenetv1_ssd import create_mobilenetv1_ssd, create_mobilenetv1_ssd_predictor
-from live_detection.misc import Timer
+from joisie_vision.mobilenetv1_ssd import create_mobilenetv1_ssd, create_mobilenetv1_ssd_predictor
+from joisie_vision.misc import Timer
 
 import cv2
 import numpy as np

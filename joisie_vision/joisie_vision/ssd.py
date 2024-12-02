@@ -4,7 +4,7 @@ import numpy as np
 from typing import List, Tuple
 import torch.nn.functional as F
 
-from trt_live_detector import box_utils		# Check this in case error comes
+from . import box_utils		# Check this in case error comes
 from collections import namedtuple
 GraphPath = namedtuple("GraphPath", ['s0', 'name', 's1'])  #
 
@@ -38,6 +38,7 @@ class SSD(nn.Module):
             self.priors = config.priors.to(self.device)
             
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        x = torch.unsqueeze(x, 0)
         confidences = []
         locations = []
         start_layer_index = 0
@@ -84,6 +85,8 @@ class SSD(nn.Module):
             confidences.append(confidence)
             locations.append(location)
 
+        print(f"Confidences: {confidences}")
+        print(f"Locations: {locations}")
         confidences = torch.cat(confidences, 1)
         locations = torch.cat(locations, 1)
         
