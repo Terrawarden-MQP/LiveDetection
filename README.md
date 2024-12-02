@@ -17,7 +17,7 @@ Vision Stack setup repo setup (after ROS2 Workspace has been set up)
 
 ## Jetson Setup
 
-1.  Flash with Jetson 6.0
+1.  Flash with Jetpack 6.0
    - https://wiki.seeedstudio.com/reComputer_J4012_Flash_Jetpack/
 2.  Check install by running `sudo apt-cache show nvidia-jetpack`
 3.  Install Intel RealSense SDK
@@ -56,6 +56,18 @@ FAULTY DRIVERS
 3.  Install RealSense Drivers
    - https://github.com/IntelRealSense/librealsense/blob/master/doc/installation_jetson.md
    - https://github.com/IntelRealSense/realsense_mipi_platform_driver
+
+4. Install Intel Wifi Driver (hotfix for Jetpack 6.0 kernel 5.15.136-tegra)
+   - Download backports-5.15.148-1.tar.xz from https://cdn.kernel.org/pub/linux/kernel/projects/backports/stable/v5.15.148/
+   - `tar Jxfv backports-5.15.148-1.tar.xz`
+   - `cd backports-5.15.148-1.tar.xz`
+   - `make defconfig-iwlwifi`
+   - `make -j8`
+   - `sudo make install`
+   - reboot the system
+   - add a line at the end of `sudo nano /etc/initramfs-tools/modules` to be the `iwlwifi`
+   - `sudo update-initramfs -u` to update the interfaces
+   - `sudo reboot` or power off, unplug, wait 5 seconds, plug back in
 
 ### Enable SSH on Jetson
 1.  `sudo apt install ufw`
