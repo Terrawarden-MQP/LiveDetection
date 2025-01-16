@@ -28,10 +28,19 @@ class Predictor:
 
     def predict(self, image, top_k=-1, prob_threshold=None, no_grad=True):
         cpu_device = torch.device("cpu")
-        height, width, _ = image.shape
-        image = self.transform(image)
-        images = image.unsqueeze(0)
-        images = images.to(self.device)
+        print(image.shape)
+        if not no_grad:
+            # If not no_grad, then we're training. 
+            # The dataloader already converts to the right format
+            # So transformation here is not necessary
+            batch, height, width, channels = image.size()
+            images = image
+        else:
+            height, width, _ = image.size()
+            image = self.transform(image)
+            images = image.unsqueeze(0)
+            images = image.to(self.device)
+        print(image.shape)
         if no_grad:
             # Runs much faster with no grad
             with torch.no_grad():
@@ -40,6 +49,7 @@ class Predictor:
                 print("Inference time: ", self.timer.end())
         else:
             # Run with gradient for training
+            print(image.shape)
             self.timer.start()
             scores, boxes = self.net.forward(images)
             print("Inference time (w/ gradient): ", self.timer.end())

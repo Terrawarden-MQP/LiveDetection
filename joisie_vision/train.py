@@ -9,6 +9,7 @@ from torch2trt import torch2trt
 from torch2trt import TRTModule
 
 from torchvision.ops import generalized_box_iou_loss
+from torchvision.ops.boxes import box_iou
 import json
 from jsondataset import JSONDataset
 
@@ -26,26 +27,39 @@ model = create_mobilenetv1_ssd(num_classes).to(device)
 predictor = create_mobilenetv1_ssd_predictor(model, candidate_size=200)
 
 def custom_loss(actual_labels, boxes, category, probs):
+    print(f"Labels for this image: {actual_labels}")
     label_categories = torch.tensor([label["category_id"] for label in actual_labels])
-    # CROSS ENTROPY LOSS
-    pred_probs = torch.nn.functional.softmax(label_categories, dim=-1)
-    # Gather the probabilities of the correct classes
-    target_probs = pred_probs.gather(dim=-1, index=target_labels.unsqueeze(-1))
+    target_boxes = torch.tensor([label["bbox"] for label in actual_labels])
+
+    # Convert target boxes to (x1, y1, x2, y2) format
+    target_boxes[:, 2:4] += target_boxes[:, 0:2]  # width + x1, height + y1
     
-    # Confidence weighting (scaled by the predicted confidence)
+    # Step 1: Match Predictions to Ground Truth
+    iou_matrix = box_iou(boxes, target_boxes)  # Compute IoU between predictions and targets
+    matched_indices = torch.argmax(iou_matrix, dim=1)  # Match each prediction to the best ground truth
+    
+    matched_gt = target_boxes[matched_indices]
+    matched_labels = label_categories[matched_indices]
+
+    # Step 2: False Positives and False Negatives
+    unmatched_preds = iou_matrix.max(dim=1).values < 0.5  # Predictions with IoU < 0.5 are unmatched
+    unmatched_targets = iou_matrix.max(dim=0).values < 0.5  # Ground truth boxes not matched by any prediction
+
+    false_positive_loss = unmatched_preds.sum() * 0.1  # Penalize unmatched predictions
+    false_negative_loss = unmatched_targets.sum() * 0.1  # Penalize unmatched ground truths
+
+    # Step 3: Classification Loss (Cross Entropy)
+    pred_probs = torch.nn.functional.softmax(category.float(), dim=-1)
+    target_probs = pred_probs.gather(dim=-1, index=matched_labels.unsqueeze(-1)).squeeze(-1)
     cls_loss = -torch.log(target_probs + 1e-6) * probs
 
-    # Get the target boxes from the labels
-    target_boxes = torch.tensor([label["bbox"] for label in actual_labels])
-    # Shift from (x,y,width,height) to (x1,y1,x2,y2)
-    # Where (x1,y1) is the top left corner, and (x2,y2) is the bottom right corner
-    target_boxes[:, 2:3] = target_boxes[:, 0:1] + target_boxes[:, 2:3]
-    
-    # Compute regression loss (e.g., GIoU)
-    reg_loss = generalized_box_iou_loss(boxes, target_boxes)
+    # Step 4: Regression Loss (GIoU Loss)
+    reg_loss = generalized_box_iou_loss(boxes[~unmatched_preds], matched_gt[~unmatched_preds])
 
-    # Combine losses
-    return cls_loss + reg_loss
+    # Combine Losses
+    total_loss = cls_loss.mean() + reg_loss + false_positive_loss + false_negative_loss
+
+    return total_loss
 
 # criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.0001)
@@ -57,8 +71,9 @@ train_dataset = JSONDataset(transforms = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 ]))
 
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
 
+# print(train_dataset.labels)
 # Training loop
 num_epochs = 10
 for epoch in range(num_epochs):
@@ -66,9 +81,7 @@ for epoch in range(num_epochs):
         images = images.to(device)
         labels = train_dataset.get_label(i)
         optimizer.zero_grad()
-        # Reorder to (batch, height, width, channels)
-        images = images.permute(0, 2, 3, 1)
-        boxes, categories, probs = predictor.predict(images, 10, 0.4)
+        boxes, categories, probs = predictor.predict(images, 10, 0.4, no_grad=False)
         loss = custom_loss(labels, boxes, categories, probs)
         loss.backward()
         optimizer.step()

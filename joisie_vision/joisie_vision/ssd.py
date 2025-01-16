@@ -38,7 +38,7 @@ class SSD(nn.Module):
             self.priors = config.priors.to(self.device)
             
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        x = torch.unsqueeze(x, 0)
+        # x = torch.unsqueeze(x, 0)
         confidences = []
         locations = []
         start_layer_index = 0

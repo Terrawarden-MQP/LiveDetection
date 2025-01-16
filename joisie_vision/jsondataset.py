@@ -30,7 +30,7 @@ class JSONDataset(Dataset):
 
     def get_label(self, idx):
         print(f"Image {idx} has {len(self.labels[idx])} labels")
-        return self.labels[idx]
+        return [self.json["annotations"][id] for id in self.labels[idx]]
 
     def process_annotations(self, filepath):
         print(filepath)
