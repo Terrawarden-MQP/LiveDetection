@@ -25,11 +25,11 @@ class JSONDataset(Dataset):
         img_path = os.path.join(self.image_root, img_name)
         img = PIL.Image.open(img_path).convert("RGB")
         img = self.transformations(img)
-        print(f"Retrieved image {idx}, with a size of {img.size()}")
+        # print(f"Retrieved image {idx}, with a size of {img.size()}")
         return img, img
 
     def get_label(self, idx):
-        print(f"Image {idx} has {len(self.labels[idx])} labels")
+        # print(f"Image {idx} has {len(self.labels[idx])} labels")
         return [self.json["annotations"][id] for id in self.labels[idx]]
 
     def process_annotations(self, filepath):

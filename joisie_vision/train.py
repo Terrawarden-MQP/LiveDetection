@@ -10,10 +10,16 @@ from torch2trt import TRTModule
 
 from torchvision.ops import generalized_box_iou_loss
 from torchvision.ops.boxes import box_iou
+import torch.nn.functional as F
 import json
 from jsondataset import JSONDataset
 
-num_classes = 10
+# HYPER-PARAMETERS
+num_epochs = 10
+learning_rate = 0.0001
+num_classes = 1
+
+import wandb
 
 # Define the device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -27,17 +33,41 @@ model = create_mobilenetv1_ssd(num_classes).to(device)
 predictor = create_mobilenetv1_ssd_predictor(model, candidate_size=200)
 
 def custom_loss(actual_labels, boxes, category, probs):
+
     print(f"Labels for this image: {actual_labels}")
     label_categories = torch.tensor([label["category_id"] for label in actual_labels])
-    target_boxes = torch.tensor([label["bbox"] for label in actual_labels])
+    target_boxes = torch.tensor([label["bbox"] for label in actual_labels], dtype=float)
+
+    print(f"Model output box tensor shape: {boxes.size()}")
+
+    # Pad tensors to size
+    if boxes.size()[0] > target_boxes.size()[0]:
+        zeros = torch.zeros_like(boxes)
+        if target_boxes.size()[0] == 0:
+            pass
+        else:
+            zeros[:target_boxes.size()[0], :target_boxes.size()[1]] = target_boxes
+        target_boxes = zeros
+        #     target_boxes = F.pad(target_boxes, (boxes.size()[1],), value=0)
+
+    else:
+        zeros = torch.zeros_like(target_boxes)
+
+        if boxes.size()[0] == 0:
+            pass
+        else:
+            zeros[:boxes.size()[0], :boxes.size()[1]] = boxes
+        boxes = zeros
 
     # Convert target boxes to (x1, y1, x2, y2) format
     target_boxes[:, 2:4] += target_boxes[:, 0:2]  # width + x1, height + y1
-    
+    target_boxes.requires_grad_()
+
     # Step 1: Match Predictions to Ground Truth
     iou_matrix = box_iou(boxes, target_boxes)  # Compute IoU between predictions and targets
+    print(f"IOI Matrix: {iou_matrix}")
     matched_indices = torch.argmax(iou_matrix, dim=1)  # Match each prediction to the best ground truth
-    
+    print(f"Matched Indices: {matched_indices}")
     matched_gt = target_boxes[matched_indices]
     matched_labels = label_categories[matched_indices]
 
@@ -50,7 +80,18 @@ def custom_loss(actual_labels, boxes, category, probs):
 
     # Step 3: Classification Loss (Cross Entropy)
     pred_probs = torch.nn.functional.softmax(category.float(), dim=-1)
-    target_probs = pred_probs.gather(dim=-1, index=matched_labels.unsqueeze(-1)).squeeze(-1)
+    # print(f"Prediction Probability Shape: {pred_probs.size()}, Matched Labels Shape: {matched_labels.size()}")
+
+    zeros = torch.zeros_like(matched_labels)
+    zeros[:pred_probs.size()[0]] = pred_probs
+    pred_probs = zeros
+
+    target_probs = pred_probs.gather(dim=-1, index=matched_labels)
+
+    zeros = torch.zeros_like(target_probs)
+    zeros[:probs.size()[0]] = probs
+    probs = zeros
+
     cls_loss = -torch.log(target_probs + 1e-6) * probs
 
     # Step 4: Regression Loss (GIoU Loss)
@@ -59,10 +100,10 @@ def custom_loss(actual_labels, boxes, category, probs):
     # Combine Losses
     total_loss = cls_loss.mean() + reg_loss + false_positive_loss + false_negative_loss
 
-    return total_loss
+    return total_loss.sum()
 
 # criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.0001)
+optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
 train_dataset = JSONDataset(transforms = transforms.Compose([
     transforms.Resize(256),
@@ -74,8 +115,20 @@ train_dataset = JSONDataset(transforms = transforms.Compose([
 train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
 
 # print(train_dataset.labels)
+
+run = wandb.init(
+    # Set the project where this run will be logged
+    project="Terrawarden UAVVaste Training",
+    # Track hyperparameters and run metadata
+    config={
+        "learning_rate": learning_rate,
+        "num_classes": num_classes,
+        "steps_per_epoch": len(train_loader),
+        "epochs": num_epochs,
+    },
+)
+
 # Training loop
-num_epochs = 10
 for epoch in range(num_epochs):
     for i, (images, labels) in enumerate(train_loader):
         images = images.to(device)
@@ -86,6 +139,7 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
 
+        wandb.log({"Step": epoch*len(train_loader) + i, "Loss": loss})
         if (i+1) % 100 == 0:
             print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(epoch+1, num_epochs, i+1, len(train_loader), loss.item()))
 

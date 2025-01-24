@@ -10,10 +10,10 @@
 #SBATCH -N 1
 #SBATCH -n 16
 #SBATCH --mem=64G
-#SBATCH --gres=gpu:2
-#SBATCH -C A30
-#SBATCH -p academic
-#SBATCH -t 48:00:00
+#SBATCH --gres=gpu:1
+#SBATCH -C A100|V100
+#SBATCH -p short
+#SBATCH -t 12:00:00
 
 module load python
 module load cuda

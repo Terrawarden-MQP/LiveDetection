@@ -85,8 +85,8 @@ class SSD(nn.Module):
             confidences.append(confidence)
             locations.append(location)
 
-        print(f"Confidences: {confidences}")
-        print(f"Locations: {locations}")
+        # print(f"Confidences: {confidences}")
+        # print(f"Locations: {locations}")
         confidences = torch.cat(confidences, 1)
         locations = torch.cat(locations, 1)
         
