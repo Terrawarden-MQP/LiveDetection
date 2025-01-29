@@ -4,7 +4,7 @@ import json
 import os
 import PIL
 
-base_path = "/home/krsiegall/Terrawarden/UAVVaste"
+base_path = "/home/akiva/School/MQP/UAVVaste"
 
 class JSONDataset(Dataset):
     def __init__(self, 

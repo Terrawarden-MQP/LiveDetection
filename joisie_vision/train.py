@@ -13,6 +13,7 @@ from torchvision.ops.boxes import box_iou
 import torch.nn.functional as F
 import json
 from jsondataset import JSONDataset
+import os
 
 # HYPER-PARAMETERS
 num_epochs = 10
@@ -25,12 +26,16 @@ import wandb
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = create_mobilenetv1_ssd(num_classes).to(device)
+model_path = os.getenv("HOME")+ '/ros2_models/mobilenet-v1-ssd-mp-0_675.pth'
+model.load_state_dict(torch.load(model_path))
+model.train().cuda()
 
 # dummy_inputs = torch.ones((1, 3, 224, 224)).to(device)
 
 # net = torch2trt(model, dummy_inputs)
 # net.load_state_dict(torch.load(trt_model_path))
 predictor = create_mobilenetv1_ssd_predictor(model, candidate_size=200)
+model.roi_head.box_predictor = predictor
 
 def custom_loss(actual_labels, boxes, category, probs):
 
@@ -72,8 +77,17 @@ def custom_loss(actual_labels, boxes, category, probs):
     matched_labels = label_categories[matched_indices]
 
     # Step 2: False Positives and False Negatives
+
     unmatched_preds = iou_matrix.max(dim=1).values < 0.5  # Predictions with IoU < 0.5 are unmatched
     unmatched_targets = iou_matrix.max(dim=0).values < 0.5  # Ground truth boxes not matched by any prediction
+    
+    # unmatched = torch.where(iou_matrix < 0.5, iou_matrix, 0)
+    # unmatched_pred_centroids = boxes[unmatched.argmax(dim=1)][0:1]
+    # unmatched_target_centroids = boxes[unmatched.argmax(dim=0)][0:1]
+
+    # Step 2.5: Centroid RMSE Loss
+    # rmse_loss = torch.sqrt(torch.mean(torch.square(unmatched_pred_centroids - unmatched_target_centroids)))
+    
 
     false_positive_loss = unmatched_preds.sum() * 0.1  # Penalize unmatched predictions
     false_negative_loss = unmatched_targets.sum() * 0.1  # Penalize unmatched ground truths
@@ -98,7 +112,7 @@ def custom_loss(actual_labels, boxes, category, probs):
     reg_loss = generalized_box_iou_loss(boxes[~unmatched_preds], matched_gt[~unmatched_preds])
 
     # Combine Losses
-    total_loss = cls_loss.mean() + reg_loss + false_positive_loss + false_negative_loss
+    total_loss = cls_loss.mean() + reg_loss + false_positive_loss + false_negative_loss # + rmse_loss
 
     return total_loss.sum()
 
@@ -134,7 +148,8 @@ for epoch in range(num_epochs):
         images = images.to(device)
         labels = train_dataset.get_label(i)
         optimizer.zero_grad()
-        boxes, categories, probs = predictor.predict(images, 10, 0.4, no_grad=False)
+        # boxes, categories, probs = predictor.predict(images, 10, prob_threshold=0, no_grad=False)
+        boxes, categories, probs = model(images)
         loss = custom_loss(labels, boxes, categories, probs)
         loss.backward()
         optimizer.step()
