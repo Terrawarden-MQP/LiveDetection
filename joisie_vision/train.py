@@ -26,7 +26,7 @@ import wandb
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = create_mobilenetv1_ssd(num_classes).to(device)
-model_path = os.getenv("HOME")+ '/ros2_models/mobilenet-v1-ssd-mp-0_675.pth'
+model_path = "/home/krsiegall/Terrawarden/TerrawardenVision/joisie_vision/UAVVaste-Trained.pth"
 model.load_state_dict(torch.load(model_path))
 model.train().cuda()
 
