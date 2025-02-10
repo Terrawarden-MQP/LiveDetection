@@ -6,6 +6,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from std_msgs.msg import String
 from vision_msgs.msg import ObjectHypothesisWithPose, BoundingBox2D, Detection2D, Detection2DArray
+from geometry_msgs.msg import Point
 from cv_bridge import CvBridge, CvBridgeError
 from joisie_vision.misc import Timer
 
@@ -13,7 +14,7 @@ import cv2
 import numpy as np
 import os
 
-class CV2DetectionNode():
+class CV2DetectionNode(Node):
 
     def __init__(self):
         super().__init__('color_detection_node')
@@ -26,19 +27,23 @@ class CV2DetectionNode():
         self.bridge = CvBridge()
 
         # Create a Detection 2D array topic to publish results on
-        self.detection_publisher = self.create_publisher(Detection2DArray, 'color_detection', 10)
+        # self.detection_publisher = self.create_publisher(Detection2D, 'color_detection', 10)
+        self.point_publisher = self.create_publisher(Point, "detected_object", 10)
 
         # Create an Image publisher for the results
         self.result_publisher = self.create_publisher(Image,'color_detection_image',10)
-
-        self.class_names = [name.strip() for name in open(self.label_path).readlines()]
-        self.num_classes = len(self.class_names)
             
+        self.declare_parameter("color_h", 158)
+        h = int(self.get_parameter('color_h').value)
+        self.declare_parameter("color_s", 170)
+        s = int(self.get_parameter('color_s').value)
+        self.declare_parameter("color_v", 183)
+        v = int(self.get_parameter('color_v').value)
+        self.target_color = np.array([h,s,v], dtype=np.uint8)
 
-        self.show = True
-        # self.timer = Timer()
-        self.time_array = []
-        self.num_times = 250
+        self.declare_parameter('show', False)
+        self.show = self.get_parameter('show').value
+
 
     def listener_callback(self, data):
         self.get_logger().info("Received an image! ")
@@ -55,8 +60,9 @@ class CV2DetectionNode():
 
         # Set range for red color and 
         # define mask (in HSV)
-        color_lower = np.array([136, 87, 111], np.uint8) 
-        color_upper = np.array([180, 255, 255], np.uint8) 
+        color_tolerance = np.array([20, 75, 50], np.uint8)
+        color_lower = np.where(self.target_color - color_tolerance >= 0, self.target_color - color_tolerance, 0)
+        color_upper = np.where(self.target_color + color_tolerance <= 255, self.target_color + color_tolerance, 255) 
         color_mask = cv2.inRange(hsvFrame, color_lower, color_upper) 
         
         # Morphological Transform, Dilation 
@@ -67,7 +73,7 @@ class CV2DetectionNode():
         
         # For red color 
         color_mask = cv2.dilate(color_mask, kernel) 
-        res_color = cv2.bitwise_and(imageFrame, imageFrame, 
+        res_color = cv2.bitwise_and(hsvFrame, hsvFrame, 
                                 mask = color_mask) 
         
 
@@ -77,7 +83,7 @@ class CV2DetectionNode():
                                             cv2.CHAIN_APPROX_SIMPLE) 
         
         detection_array = Detection2DArray()
-        
+        largest_detect = (0, None, (0,0))
         for pic, contour in enumerate(contours): 
             area = cv2.contourArea(contour) 
             if(area > 300): 
@@ -101,6 +107,9 @@ class CV2DetectionNode():
                 detection.results.append(object_hypothesis_with_pose)
                 detection.bbox = bounding_box
 
+                if w*h > largest_detect[0]:
+                    largest_detect = (w*h, detection, (float(x + w/2), float(y + h/2)))
+
                 detection_array.header = data.header
                 detection_array.detections.append(detection)
 
@@ -115,11 +124,17 @@ class CV2DetectionNode():
         
         # Displaying the predictions
         if self.show:
-            
+            # cv_image = cv2.circle(cv_image, largest_detect[2], 
+            #                                 2, (0, 255, 0), 2) 
             cv2.imshow("Real-Time Color Detection", cv_image) 
-        # Publishing the results onto the the Detection2DArray vision_msgs format
-        self.detection_publisher.publish(detection_array)
-        
+        # Publishing the results onto the the Detection2D vision_msgs format
+        # self.detection_publisher.publish(largest_detect[1])
+        point = Point()
+        point.x = float(largest_detect[2][0])
+        point.y = float(largest_detect[2][1])
+        print(f"Publishing largest object: {(largest_detect[2])}")
+        self.point_publisher.publish(point)
+
         ros_image = self.bridge.cv2_to_imgmsg(cv_image)
         ros_image.header.frame_id = 'camera_frame'
         self.result_publisher.publish(ros_image)
