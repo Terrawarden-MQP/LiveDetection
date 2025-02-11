@@ -27,17 +27,17 @@ class CV2DetectionNode(Node):
         self.bridge = CvBridge()
 
         # Create a Detection 2D array topic to publish results on
-        # self.detection_publisher = self.create_publisher(Detection2D, 'color_detection', 10)
+        self.detection_publisher = self.create_publisher(Detection2D, 'color_detection', 10)
         self.point_publisher = self.create_publisher(Point, "detected_object", 10)
 
         # Create an Image publisher for the results
         self.result_publisher = self.create_publisher(Image,'color_detection_image',10)
             
-        self.declare_parameter("color_h", 158)
+        self.declare_parameter("color_h", 180)
         h = int(self.get_parameter('color_h').value)
-        self.declare_parameter("color_s", 170)
+        self.declare_parameter("color_s", 110)
         s = int(self.get_parameter('color_s').value)
-        self.declare_parameter("color_v", 183)
+        self.declare_parameter("color_v", 210)
         v = int(self.get_parameter('color_v').value)
         self.target_color = np.array([h,s,v], dtype=np.uint8)
 
@@ -56,12 +56,14 @@ class CV2DetectionNode(Node):
         # BGR(RGB color space) to 
         # HSV(hue-saturation-value) 
         # color space 
+        # cv2.imwrite("image.png", cv_image)
         hsvFrame = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV) 
 
         # Set range for red color and 
         # define mask (in HSV)
-        color_tolerance = np.array([20, 75, 50], np.uint8)
+        color_tolerance = np.array([5, 50, 45], np.uint8)
         color_lower = np.where(self.target_color - color_tolerance >= 0, self.target_color - color_tolerance, 0)
+        
         color_upper = np.where(self.target_color + color_tolerance <= 255, self.target_color + color_tolerance, 255) 
         color_mask = cv2.inRange(hsvFrame, color_lower, color_upper) 
         
@@ -108,7 +110,7 @@ class CV2DetectionNode(Node):
                 detection.bbox = bounding_box
 
                 if w*h > largest_detect[0]:
-                    largest_detect = (w*h, detection, (float(x + w/2), float(y + h/2)))
+                    largest_detect = (w*h, detection, (int(x + w/2), int(y + h/2)))
 
                 detection_array.header = data.header
                 detection_array.detections.append(detection)
@@ -124,8 +126,8 @@ class CV2DetectionNode(Node):
         
         # Displaying the predictions
         if self.show:
-            # cv_image = cv2.circle(cv_image, largest_detect[2], 
-            #                                 2, (0, 255, 0), 2) 
+            cv_image = cv2.circle(cv_image, largest_detect[2], 
+                                            5, (0, 255, 0), 2)
             cv2.imshow("Real-Time Color Detection", cv_image) 
         # Publishing the results onto the the Detection2D vision_msgs format
         # self.detection_publisher.publish(largest_detect[1])
