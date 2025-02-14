@@ -27,11 +27,11 @@ class CV2DetectionNode(Node):
         self.bridge = CvBridge()
 
         # Create a Detection 2D array topic to publish results on
-        self.detection_publisher = self.create_publisher(Detection2D, 'color_detection', 10)
-        self.point_publisher = self.create_publisher(Point, "detected_object", 10)
+        self.detection_publisher = self.create_publisher(Detection2D, 'joisie_detection', 10)
+        self.point_publisher = self.create_publisher(Point, "detected_object_centroid", 10)
 
         # Create an Image publisher for the results
-        self.result_publisher = self.create_publisher(Image,'color_detection_image',10)
+        self.image_publisher = self.create_publisher(Image,'color_detection_image',10)
             
         self.declare_parameter("color_h", 180)
         h = int(self.get_parameter('color_h').value)
@@ -61,11 +61,13 @@ class CV2DetectionNode(Node):
 
         # Set range for red color and 
         # define mask (in HSV)
-        color_tolerance = np.array([5, 50, 45], np.uint8)
+        # color_tolerance = np.array([5, 50, 45], np.uint8)
+        color_tolerance = np.array([20, 50, 45], np.uint8)
         color_lower = np.where(self.target_color - color_tolerance >= 0, self.target_color - color_tolerance, 0)
         
         color_upper = np.where(self.target_color + color_tolerance <= 255, self.target_color + color_tolerance, 255) 
-        color_mask = cv2.inRange(hsvFrame, color_lower, color_upper) 
+        # color_mask = cv2.inRange(hsvFrame, color_lower, color_upper) 
+        color_mask = cv2.inRange(hsvFrame,(165,117,78), (180,255,255))
         
         # Morphological Transform, Dilation 
         # for each color and bitwise_and operator 
@@ -86,8 +88,10 @@ class CV2DetectionNode(Node):
         
         detection_array = Detection2DArray()
         largest_detect = (0, None, (0,0))
+        self.get_logger().info(f"Candidates: {len(contours)}")
         for pic, contour in enumerate(contours): 
             area = cv2.contourArea(contour) 
+            self.get_logger().info(f"Area: {area}")
             if(area > 300): 
                 x, y, w, h = cv2.boundingRect(contour) 
 
@@ -97,8 +101,8 @@ class CV2DetectionNode(Node):
                 object_hypothesis_with_pose.hypothesis.score = 1.
 
                 bounding_box = BoundingBox2D()
-                bounding_box.center.position.x = float((x + w)/2)
-                bounding_box.center.position.y = float((y + h)/2)
+                bounding_box.center.position.x = float((x + w/2))
+                bounding_box.center.position.y = float((y + h/2))
                 bounding_box.center.theta = 0.0
                 
                 bounding_box.size_x = float(2*(bounding_box.center.position.x - x))
@@ -134,10 +138,12 @@ class CV2DetectionNode(Node):
         point = Point()
         point.x = float(largest_detect[2][0])
         point.y = float(largest_detect[2][1])
-        print(f"Publishing largest object: {(largest_detect[2])}")
+        self.get_logger().info(f"Publishing largest object: {(largest_detect[2])}")
         self.point_publisher.publish(point)
+        if largest_detect[1] is not None:
+            self.detection_publisher.publish(largest_detect[1]) 
 
         ros_image = self.bridge.cv2_to_imgmsg(cv_image)
         ros_image.header.frame_id = 'camera_frame'
-        self.result_publisher.publish(ros_image)
+        self.image_publisher.publish(ros_image)
         cv2.waitKey(1)
