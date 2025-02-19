@@ -33,11 +33,11 @@ class CV2DetectionNode(Node):
         # Create an Image publisher for the results
         self.image_publisher = self.create_publisher(Image,'color_detection_image',10)
             
-        self.declare_parameter("color_h", 180)
+        self.declare_parameter("color_h", 70)
         h = int(self.get_parameter('color_h').value)
-        self.declare_parameter("color_s", 110)
+        self.declare_parameter("color_s", 150)
         s = int(self.get_parameter('color_s').value)
-        self.declare_parameter("color_v", 210)
+        self.declare_parameter("color_v", 135)
         v = int(self.get_parameter('color_v').value)
         self.target_color = np.array([h,s,v], dtype=np.uint8)
 
@@ -61,13 +61,12 @@ class CV2DetectionNode(Node):
 
         # Set range for red color and 
         # define mask (in HSV)
-        # color_tolerance = np.array([5, 50, 45], np.uint8)
-        color_tolerance = np.array([20, 50, 45], np.uint8)
+        color_tolerance = np.array([10, 105, 55], np.uint8)
         color_lower = np.where(self.target_color - color_tolerance >= 0, self.target_color - color_tolerance, 0)
         
         color_upper = np.where(self.target_color + color_tolerance <= 255, self.target_color + color_tolerance, 255) 
-        # color_mask = cv2.inRange(hsvFrame, color_lower, color_upper) 
-        color_mask = cv2.inRange(hsvFrame,(165,117,78), (180,255,255))
+        color_mask = cv2.inRange(hsvFrame, color_lower, color_upper) 
+        # color_mask = cv2.inRange(hsvFrame,(165,117,78), (180,255,255))
         
         # Morphological Transform, Dilation 
         # for each color and bitwise_and operator 
