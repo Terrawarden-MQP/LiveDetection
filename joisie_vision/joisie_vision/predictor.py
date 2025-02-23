@@ -4,7 +4,6 @@ from joisie_vision import box_utils
 from joisie_vision.data_preprocessing import PredictionTransform
 from joisie_vision.misc import Timer
 
-
 class Predictor:
     def __init__(self, net, size, mean=0.0, std=1.0, nms_method=None,
                  iou_threshold=0.45, filter_threshold=0.01, candidate_size=200, sigma=0.5, device=None):
@@ -28,7 +27,7 @@ class Predictor:
 
     def predict(self, image, top_k=-1, prob_threshold=None, no_grad=True):
         cpu_device = torch.device("cpu")
-        print(image.shape)
+        # print(image.shape)
         if not no_grad:
             # If not no_grad, then we're training. 
             # The dataloader already converts to the right format
@@ -40,20 +39,22 @@ class Predictor:
             image = self.transform(image)
             images = image.unsqueeze(0)
             images = image.to(self.device)
-        print(image.shape)
+        # print(image.shape)
         if no_grad:
             # Runs much faster with no grad
             with torch.no_grad():
                 self.timer.start()
                 scores, boxes = self.net.forward(images)
+                scores = torch.nn.functional.softmax(scores, dim=1)
                 print("Inference time: ", self.timer.end())
         else:
             # Run with gradient for training
-            print(image.shape)
+            # print(image.shape)
             self.timer.start()
             scores, boxes = self.net.forward(images)
-            print("Inference time (w/ gradient): ", self.timer.end())
-            print(f"Scores: {scores}, Boxes: {boxes}")
+            scores = torch.nn.functional.softmax(scores, dim=1)
+            # print("Inference time (w/ gradient): ", self.timer.end())
+            print(f"Scores: {scores}\nBoxes: {boxes}")
         boxes = boxes[0]
         scores = scores[0]
         if not prob_threshold:
@@ -71,6 +72,7 @@ class Predictor:
                 continue
             subset_boxes = boxes[mask, :]
             box_probs = torch.cat([subset_boxes, probs.reshape(-1, 1)], dim=1)
+            # Non-Maximum Supression to remove duplicate boxes
             box_probs = box_utils.nms(box_probs, self.nms_method,
                                       score_threshold=prob_threshold,
                                       iou_threshold=self.iou_threshold,

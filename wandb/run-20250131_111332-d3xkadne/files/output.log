@@ -1,0 +1,27 @@
+torch.Size([1, 3, 224, 224])
+torch.Size([1, 3, 224, 224])
+torch.Size([1, 3, 224, 224])
+Inference time (w/ gradient):  0.9291679859161377
+Scores: tensor([[[-0.0046],
+         [-0.0126],
+         [ 0.0133],
+         ...,
+         [-0.0226],
+         [ 0.0144],
+         [-0.0077]]], device='cuda:0', grad_fn=<CatBackward0>)
+Boxes: tensor([[[ 0.0118, -0.0125,  0.0063,  0.0117],
+         [-0.0122,  0.0042, -0.0015,  0.0048],
+         [ 0.0073, -0.0135,  0.0146, -0.0104],
+         ...,
+         [-0.0021,  0.0213, -0.0183, -0.0149],
+         [ 0.0058,  0.0188,  0.0004, -0.0010],
+         [-0.0004, -0.0126, -0.0019, -0.0009]]], device='cuda:0',
+       grad_fn=<CatBackward0>)
+Labels for this image: [{'id': 0, 'image_id': 0, 'category_id': 0, 'segmentation': [[2354, 388, 2419, 435, 2351, 524, 2288, 480]], 'area': 8840.5, 'bbox': [2288, 388, 131, 136], 'iscrowd': 0}, {'id': 1, 'image_id': 0, 'category_id': 0, 'segmentation': [[1898, 509, 1925, 514, 1925, 535, 1909, 546, 1888, 530]], 'area': 940.5, 'bbox': [1888, 509, 36, 36], 'iscrowd': 0}, {'id': 2, 'image_id': 0, 'category_id': 0, 'segmentation': [[1832, 1069, 1877, 1072, 1872, 1130, 1822, 1122]], 'area': 2677.5, 'bbox': [1822, 1069, 55, 60], 'iscrowd': 0}, {'id': 3, 'image_id': 0, 'category_id': 0, 'segmentation': [[3332, 1390, 3367, 1388, 3393, 1532, 3351, 1532]], 'area': 5528.0, 'bbox': [3332, 1388, 60, 144], 'iscrowd': 0}, {'id': 4, 'image_id': 0, 'category_id': 0, 'segmentation': [[1740, 2143, 1872, 2124, 1861, 2088, 1838, 2069, 1769, 2077, 1730, 2095]], 'area': 7449.5, 'bbox': [1730, 2069, 142, 73], 'iscrowd': 0}]
+Model output box tensor shape: torch.Size([0])
+IOI Matrix: tensor([[0., 0., 0., 0., 0.],
+        [0., 0., 0., 0., 0.],
+        [0., 0., 0., 0., 0.],
+        [0., 0., 0., 0., 0.],
+        [0., 0., 0., 0., 0.]], dtype=torch.float64, grad_fn=<DivBackward0>)
+Matched Indices: tensor([0, 0, 0, 0, 0])
