@@ -1,7 +1,0 @@
-{"time":"2025-01-31T16:50:37.801390165-05:00","level":"INFO","msg":"stream: starting","core version":"0.19.4","symlink path":"/home/akiva/School/MQP/TerrawardenVision/wandb/run-20250131_165037-a4qknfpb/logs/debug-core.log"}
-{"time":"2025-01-31T16:50:37.910446465-05:00","level":"INFO","msg":"created new stream","id":"a4qknfpb"}
-{"time":"2025-01-31T16:50:37.910498817-05:00","level":"INFO","msg":"stream: started","id":"a4qknfpb"}
-{"time":"2025-01-31T16:50:37.910623021-05:00","level":"INFO","msg":"writer: Do: started","stream_id":"a4qknfpb"}
-{"time":"2025-01-31T16:50:37.910766508-05:00","level":"INFO","msg":"sender: started","stream_id":"a4qknfpb"}
-{"time":"2025-01-31T16:50:37.910916949-05:00","level":"INFO","msg":"handler: started","stream_id":"a4qknfpb"}
-{"time":"2025-01-31T16:50:38.146996376-05:00","level":"INFO","msg":"Starting system monitor"}
