@@ -8,6 +8,7 @@ setup(
     packages=[package_name],
     data_files=[
         ('share/' + package_name + '/launch', ['launch/live_detect.launch.py']),
+        ('share/' + package_name + '/launch', ['launch/color_detect.launch.py']),
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
@@ -21,7 +22,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-	        'live_detector = joisie_vision.trt_detection:main',
+	        'live_detection = joisie_vision.trt_detection:main',
+	        'color_detection = joisie_vision.color_detection:main',
         ],
     },
 )
