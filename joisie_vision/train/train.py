@@ -8,6 +8,8 @@ from coco_utils import get_coco
 import utils
 from engine import train_one_epoch, evaluate
 
+root = "/home/krsiegall/Terrawarden/"
+
 def get_model_instance_segmentation(num_classes):
     # load an instance segmentation model pre-trained on COCO
     model = torchvision.models.detection.maskrcnn_resnet50_fpn(weights="DEFAULT")
@@ -48,35 +50,35 @@ def get_transform(train):
 
 # model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights="DEFAULT")
 
-train_dataset = get_coco(root = "../../../TACO/", 
+train_dataset = get_coco(root = root+"TACO/", 
                         image_set="train", 
                         transforms=get_transform(train=True),
                         with_masks=True)
 train_loader = torch.utils.data.DataLoader(
     train_dataset,
-    batch_size=1,
+    batch_size=4,
     shuffle=True,
     collate_fn=utils.collate_fn
 )
 
-test_dataset = get_coco(root = "../../../TACO/", 
+test_dataset = get_coco(root = root+"TACO/", 
                         image_set="test", 
                         transforms=get_transform(train=False),
                         with_masks=True)
 test_loader = torch.utils.data.DataLoader(
     test_dataset,
-    batch_size=1,
+    batch_size=4,
     shuffle=True,
     collate_fn=utils.collate_fn
 )
 
-val_dataset = get_coco(root = "../../../TACO/", 
+val_dataset = get_coco(root = root+"TACO/", 
                         image_set="val", 
                         transforms=get_transform(train=False),
                         with_masks=True)
 val_loader = torch.utils.data.DataLoader(
     test_dataset,
-    batch_size=1,
+    batch_size=4,
     shuffle=True,
     collate_fn=utils.collate_fn
 )
@@ -103,11 +105,11 @@ optimizer = torch.optim.AdamW(
 # and a learning rate scheduler
 lr_scheduler = torch.optim.lr_scheduler.StepLR(
     optimizer,
-    step_size=3,
+    step_size=2,
     gamma=0.1
 )
 
-num_epochs = 10
+num_epochs = 5
 
 import wandb
 run = wandb.init(
@@ -130,6 +132,8 @@ for epoch in range(num_epochs):
     # evaluate on the test dataset
     test_evaluator = evaluate(model, test_loader, device=device)
     wandb.log(test_evaluator.coco_eval)
+    torch.save(model.state_dict(), f'TACO-Trained-Epoch{epoch}.pth')
+    
 val_evaluator = evaluate(model, val_loader, device=device)
 print(val_evaluator.coco_eval)
 print("Training Complete!")

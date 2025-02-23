@@ -199,9 +199,9 @@ class MetricLogger:
                     )
                 if self.wandb:
                     import wandb
-                    log = {}
+                    log = {"Batch Num":i}
                     for name, meter in self.meters.items():
-                        log[name]=meter.value
+                        log[name]=meter.avg
                     wandb.log(log)
             i += 1
             end = time.time()
