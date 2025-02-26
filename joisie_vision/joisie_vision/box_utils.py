@@ -161,6 +161,8 @@ def assign_priors(gt_boxes, gt_labels, corner_form_priors,
         boxes (num_priors, 4): real values for priors.
         labels (num_priros): labels for priors.
     """
+    if gt_boxes.shape[0] == 0 or corner_form_priors.shape[0] == 0:
+        return torch.empty((0,4)),torch.empty(0)
     # size: num_priors x num_targets
     ious = iou_of(gt_boxes.unsqueeze(0), corner_form_priors.unsqueeze(1))
     # size: num_priors

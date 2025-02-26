@@ -11,11 +11,11 @@
 #SBATCH -n 16
 #SBATCH --mem=64G
 #SBATCH --gres=gpu:1
-#SBATCH -C A100|V100
-#SBATCH -p short
-#SBATCH -t 12:00:00
+#SBATCH -C H100|A100|V100
+#SBATCH -p long
+#SBATCH -t 48:00:00
 
 module load python
 module load cuda
 source ~/bin/activate
-python train.py
+python train/train.py
