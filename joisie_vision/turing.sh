@@ -10,8 +10,8 @@
 #SBATCH -N 1
 #SBATCH -n 16
 #SBATCH --mem=64G
-#SBATCH --gres=gpu:2
-#SBATCH -C H100|A100
+#SBATCH --gres=gpu:1
+#SBATCH -C H100|A100|V100
 #SBATCH -p long
 #SBATCH -t 48:00:00
 

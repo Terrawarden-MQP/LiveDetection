@@ -33,8 +33,10 @@ def get_model_instance_segmentation(num_classes):
 
 def get_transform(train):
     transforms = []
-
+    new_size = 384
     transforms.append(T.ToTensor())
+    transforms.append(T.Resize((new_size, new_size)))
+    transforms.append(T.ToDtype(torch.float, scale=True))
 
     if train:
         transforms.append(CustomT.RandomHorizontalFlip(0.5))
@@ -44,8 +46,6 @@ def get_transform(train):
         transforms.append(T.GaussianBlur(kernel_size=(5,5)))
         transforms.append(T.GaussianNoise())
 
-    transforms.append(T.ToDtype(torch.float, scale=True))
-    
     return T.Compose(transforms)
 
 # model = torchvision.models.detection.fasterrcnn_resnet50_fpn(weights="DEFAULT")
@@ -97,12 +97,11 @@ model.to(device)
 params = [p for p in model.parameters() if p.requires_grad]
 optimizer = torch.optim.AdamW(
     params,
-    lr=0.005,
-    # momentum=0.9,
+    lr=1e-4,
     weight_decay=0.0005
 )
 
-# and a learning rate scheduler
+# # and a learning rate scheduler
 lr_scheduler = torch.optim.lr_scheduler.StepLR(
     optimizer,
     step_size=2,
@@ -131,11 +130,13 @@ for epoch in range(num_epochs):
     lr_scheduler.step()
     # evaluate on the test dataset
     test_evaluator = evaluate(model, test_loader, device=device)
-    wandb.log(test_evaluator.coco_eval)
+    print(f"Epoch {epoch}:", test_evaluator.coco_eval)
+    # wandb.log(test_evaluator.coco_eval)
     torch.save(model.state_dict(), f'TACO-Trained-Epoch{epoch}.pth')
+    torch.cuda.empty_cache()
     
 val_evaluator = evaluate(model, val_loader, device=device)
-print(val_evaluator.coco_eval)
+print("Validation: ",val_evaluator.coco_eval)
 print("Training Complete!")
 
 torch.save(model.state_dict(), 'TACO-Trained.pth')
