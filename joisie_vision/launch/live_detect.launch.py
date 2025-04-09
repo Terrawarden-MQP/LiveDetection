@@ -23,10 +23,11 @@ def generate_launch_description():
         Node(
             package="joisie_vision",
             namespace="joisie_vision",
-            executable="yolo_detection",
+            executable="live_detection",
             parameters=[
                 {
-                    "topic":"/camera/camera/color/image_raw"
+                    "topic":"/camera/camera/color/image_raw",
+                    "show":"true"
                 }
             ]
         )

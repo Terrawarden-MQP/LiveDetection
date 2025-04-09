@@ -53,7 +53,7 @@ class YOLODetectionNode(Node):
         self.class_names = ["Cans"]
         self.num_classes = len(self.class_names)
         
-        self.declare_parameter('model_path', 'turing_onlycans_v2.pt')
+        self.declare_parameter('model_path', '/home/joisie/Desktop/ros_ws/src/TerrawardenVision/joisie_vision/joisie_vision/turing_canet_v2.pt')
 
         model_path =  self.get_parameter('model_path').value
         if (os.path.isfile(model_path)):
@@ -61,6 +61,8 @@ class YOLODetectionNode(Node):
         else:
             raise FileNotFoundError(f"{model_path} does not exist")
             
+        self.declare_parameter('show', "false")
+        self.show = self.get_parameter('show').value.lower() == "true"
             
         self.yolo = YOLO(model_path) 
             
