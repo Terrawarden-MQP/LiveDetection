@@ -23,7 +23,7 @@ def generate_launch_description():
         Node(
             package="joisie_vision",
             namespace="joisie_vision",
-            executable="trt_detection",
+            executable="yolo_detection",
             parameters=[
                 {
                     "topic":"/camera/camera/color/image_raw"

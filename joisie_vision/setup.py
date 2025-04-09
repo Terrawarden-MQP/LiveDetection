@@ -22,7 +22,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-	        'live_detection = joisie_vision.trt_detection:main',
+	        'live_detection = joisie_vision.yolo_detection:main',
 	        'color_detection = joisie_vision.color_detection:main',
         ],
     },
