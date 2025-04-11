@@ -46,7 +46,7 @@ class CV2DetectionNode(Node):
 
 
     def listener_callback(self, data):
-        self.get_logger().info("Received an image! ")
+        # self.get_logger().info("Received an image! ")
         try:
           cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except CvBridgeError as e:
@@ -87,10 +87,10 @@ class CV2DetectionNode(Node):
         
         detection_array = Detection2DArray()
         largest_detect = (0, None, (0,0))
-        self.get_logger().info(f"Candidates: {len(contours)}")
+        # self.get_logger().info(f"Candidates: {len(contours)}")
         for pic, contour in enumerate(contours): 
             area = cv2.contourArea(contour) 
-            self.get_logger().info(f"Area: {area}")
+            # self.get_logger().info(f"Area: {area}")
             if(area > 300): 
                 x, y, w, h = cv2.boundingRect(contour) 
 
@@ -137,7 +137,7 @@ class CV2DetectionNode(Node):
         point = Point()
         point.x = float(largest_detect[2][0])
         point.y = float(largest_detect[2][1])
-        self.get_logger().info(f"Publishing largest object: {(largest_detect[2])}")
+        # self.get_logger().info(f"Publishing largest object: {(largest_detect[2])}")
         self.point_publisher.publish(point)
         if largest_detect[1] is not None:
             self.detection_publisher.publish(largest_detect[1]) 

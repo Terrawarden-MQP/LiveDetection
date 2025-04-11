@@ -14,7 +14,7 @@ from rclpy.node import Node
 # CV Bridge and message imports
 from sensor_msgs.msg import Image
 from std_msgs.msg import String, Header
-from vision_msgs.msg import ObjectHypothesisWithPose, Detection2D, Detection2DArray
+from vision_msgs.msg import ObjectHypothesisWithPose, ObjectHypothesis, Detection2D, Detection2DArray
 from geometry_msgs.msg import Point, PoseWithCovariance, Pose
 from cv_bridge import CvBridge, CvBridgeError
 
@@ -44,16 +44,17 @@ class YOLODetectionNode(Node):
 
         # Create a Detection 2D array topic to publish results on
         self.detection_publisher = self.create_publisher(Detection2D, 'joisie_detection', 10)
-        self.point_publisher = self.create_publisher(Point, "detected_object_centroid", 10)
+
+        self.declare_parameter('centroid_topic', 'detected_object_centroid')
+        self.point_publisher = self.create_publisher(Point, self.get_parameter('centroid_topic').value, 10)
 
         # Create an Image publisher for the results
-        self.result_publisher = self.create_publisher(Image,'yolo_detection_image',10)
-
+        self.image_publisher = self.create_publisher(Image,'yolo_detection_image',10)
 
         self.class_names = ["Cans"]
         self.num_classes = len(self.class_names)
         
-        self.declare_parameter('model_path', '/home/joisie/Desktop/ros_ws/src/TerrawardenVision/joisie_vision/joisie_vision/turing_canet_v2.pt')
+        self.declare_parameter('model_path', '/home/joisie/Desktop/ros_ws/src/TerrawardenVision/joisie_vision/joisie_vision/turing_canet_v2.engine')
 
         model_path =  self.get_parameter('model_path').value
         if (os.path.isfile(model_path)):
@@ -61,10 +62,14 @@ class YOLODetectionNode(Node):
         else:
             raise FileNotFoundError(f"{model_path} does not exist")
             
-        self.declare_parameter('show', "false")
-        self.show = self.get_parameter('show').value.lower() == "true"
+        self.declare_parameter('show', False)
+        self.show = self.get_parameter('show').value
             
         self.yolo = YOLO(model_path) 
+        if ".pt" in model_path:
+            self.yolo.cuda()
+
+        self.receiving_info = False
             
         self.timer = Timer()
         self.time_array = []
@@ -72,58 +77,74 @@ class YOLODetectionNode(Node):
 
 
     def listener_callback(self, data):
-        self.get_logger().info("Received an image! ")
+        # self.get_logger().info("Received an image! ")
+        if not self.receiving_info:
+            self.get_logger().info("Detection online and receiving messages!")
+            self.receiving_info = True
         try:
             # Extract the image from the rosmsg to a regular format using the cv bridge
-            cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+            cv_image = self.bridge.imgmsg_to_cv2(data, "rgb8")
 
             image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB)
             self.timer.start()
-            result = self.yolo.predict(image, 10, 0.4)
+            results = self.yolo.predict(source=image) # 10, 0.4
             interval = self.timer.end()
             if len(self.time_array) >= self.num_times:
                 self.time_array.pop(0)
             self.time_array.append(interval)
 
-            self.get_logger().info('Time: {:.3f}s, Avg Time: {:.3f}s Detect Objects: {:d}.'.format(interval, np.average(self.time_array), result.boxes.size(0)))
+            if len(results) == 0:
+                # If this gets printed idek
+                self.get_logger().warn(f'Time: {interval:.3f}s, Avg Time: {np.average(self.time_array):.3f}s No Detection Found.')
+                return
+            result = results[0]
+
+            if interval > 0.05:
+                self.get_logger().warn(f'Detection took longer than expected! Time: {interval:.3f}s, Avg Time: {np.average(self.time_array):.3f}s Detect Objects: {result.boxes.data.size(0)}')
+            results_image = result.plot()
+            # Displaying the predictions
+            if self.show:
+                cv2.imshow("YOLO Detection Node", results_image)
             
-            if result.boxes.size(0) > 0:
-                # Process results list
-                boxes = result.boxes  # Boxes object for bounding box outputs
-                probs = result.probs  # Probs object for classification outputs
+            
+            if result.boxes.data.size(0) == 0:
+                # Don't publish anything if no point seen
+                return
+            
+            # Process results list
+            boxes = result.boxes  # Boxes object for bounding box outputs
 
-                index_highest_prob = probs.top1
-                highest_prob = probs.top1conf
+            index_highest_prob = torch.argmax(boxes.conf)
+            highest_prob = float(boxes.conf[index_highest_prob])
 
-                # Publishing the results onto the the Detection2D vision_msgs format
-                # self.detection_publisher.publish(largest_detect[1])
-                point = Point()
-                x,y,w,h = tuple(boxes.xywhn[index_highest_prob])
-                point.x = x
-                point.y = y
-                self.get_logger().info(f"Publishing object: {point}")
-                self.point_publisher.publish(point)
+            # Publishing the results onto the the Detection2D vision_msgs format
+            # self.detection_publisher.publish(largest_detect[1])
+            point = Point()
+            x,y,w,h = tuple(boxes.xywhn[index_highest_prob])
+            # self.get_logger().info(f"Most likely box found at {(x,y)} with size {(w,h)}")
+            point.x = float(x*data.width)
+            point.y = float(y*data.height)
+            # self.get_logger().info(f"Publishing object: {point}")
+            self.point_publisher.publish(point)
 
-                detection_msg = Detection2D()
-                detection_msg.bbox.center.x = x
-                detection_msg.bbox.center.y = y
-                detection_msg.bbox.size_x = w
-                detection_msg.bbox.size_y = h
-                detection_msg.source_img = data
-                detection_msg.results = [ObjectHypothesisWithPose(id=0, score=highest_prob, pose=PoseWithCovariance(pose=Pose(position=Point(x=x,y=y))))]
-                detection_msg.header.time = self.get_clock().now()
-                self.detection_publisher.publish(detection_msg)
-
-                results_image = result.plot()
-                # Displaying the predictions
-                if self.show:
-                    results_image.show()
-                ros_image = self.bridge.cv2_to_imgmsg(results_image, encoding="bgr8")
-                ros_image.header.frame_id = 'camera_frame'
-                self.image_publisher.publish(ros_image)
+            detection_msg = Detection2D()
+            detection_msg.bbox.center.position.x = float(x)
+            detection_msg.bbox.center.position.y = float(y)
+            detection_msg.bbox.size_x = float(w)
+            detection_msg.bbox.size_y = float(h)
+            detection_msg.results = [ObjectHypothesisWithPose(hypothesis=ObjectHypothesis(class_id="Can", score=highest_prob), 
+                                        pose=PoseWithCovariance(pose=Pose(position=Point(x=float(x),y=float(y)))))]
+            detection_msg.header.stamp = self.get_clock().now().to_msg()
+            self.detection_publisher.publish(detection_msg)
+            ros_image = self.bridge.cv2_to_imgmsg(results_image, encoding="rgb8")
+            ros_image.header.frame_id = 'camera_frame'
+            self.image_publisher.publish(ros_image)
         except CvBridgeError as e:
           print(e)
         cv2.waitKey(1)
+    
+    def shutdown(self):
+        cv2.destroyAllWindows()
 
 
 def main(args=None):
@@ -133,6 +154,7 @@ def main(args=None):
 
     rclpy.spin(yolo_detection_node)
 
+    yolo_detection_node.shutdown()
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)

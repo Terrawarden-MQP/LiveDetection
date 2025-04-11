@@ -22,7 +22,7 @@ def generate_launch_description():
         ),
         Node(
             package="joisie_vision",
-            namespace="joisie_vision",
+            # namespace="joisie_vision",
             executable="live_detection",
             parameters=[
                 {
