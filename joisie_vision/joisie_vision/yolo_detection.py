@@ -137,6 +137,8 @@ class YOLODetectionNode(Node):
                 return
             elif highest_prob < self.warn_probability:
                 self.get_logger().warn(f'Detection probability low ({highest_prob})!')
+            else:
+                self.get_logger().warn(f'Detected can with probability ({highest_prob})!')
 
             # Publishing the results onto the the Detection2D vision_msgs format
             # self.detection_publisher.publish(largest_detect[1])
