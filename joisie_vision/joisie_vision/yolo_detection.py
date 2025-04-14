@@ -75,6 +75,15 @@ class YOLODetectionNode(Node):
         self.time_array = []
         self.num_times = 250
 
+        # Detections below this probability will not be communicated over ROS
+        self.min_probability = 0.5
+        # Detections between this probability and the minimum will log a warning
+        # But will still send the centroid
+        self.warn_probability = 0.65
+
+        # Minimum size measured from a picture of a can at 4m from camera
+        self.min_size = (0.01, 0.035)
+
 
     def listener_callback(self, data):
         # self.get_logger().info("Received an image! ")
@@ -101,10 +110,14 @@ class YOLODetectionNode(Node):
 
             if interval > 0.05:
                 self.get_logger().warn(f'Detection took longer than expected! Time: {interval:.3f}s, Avg Time: {np.average(self.time_array):.3f}s Detect Objects: {result.boxes.data.size(0)}')
+            
             results_image = result.plot()
             # Displaying the predictions
             if self.show:
                 cv2.imshow("YOLO Detection Node", results_image)
+            ros_image = self.bridge.cv2_to_imgmsg(results_image, encoding="rgb8")
+            ros_image.header.frame_id = 'camera_frame'
+            self.image_publisher.publish(ros_image)
             
             
             if result.boxes.data.size(0) == 0:
@@ -117,11 +130,26 @@ class YOLODetectionNode(Node):
             index_highest_prob = torch.argmax(boxes.conf)
             highest_prob = float(boxes.conf[index_highest_prob])
 
+            # If the highest prob box has a prob below the minimum
+            # do not send it to extract cluster or task manager
+            if highest_prob < self.min_probability:
+                self.get_logger().warn(f'Detection probability very low ({highest_prob})! Not sending point to extract!')
+                return
+            elif highest_prob < self.warn_probability:
+                self.get_logger().warn(f'Detection probability low ({highest_prob})!')
+
             # Publishing the results onto the the Detection2D vision_msgs format
             # self.detection_publisher.publish(largest_detect[1])
             point = Point()
-            x,y,w,h = tuple(boxes.xywhn[index_highest_prob])
+            # x, y, w, and h are all normalized
+            x, y, w, h = tuple(boxes.xywhn[index_highest_prob])
+
+            if w < self.min_size[0] or h < self.min_size[1]:
+                self.get_logger().warn(f"Box with probability {highest_prob} and size {(w,h)} deemed too small to be a can!")
+                return
             # self.get_logger().info(f"Most likely box found at {(x,y)} with size {(w,h)}")
+
+            # Point sent is in pixels (but still a float)
             point.x = float(x*data.width)
             point.y = float(y*data.height)
             # self.get_logger().info(f"Publishing object: {point}")
@@ -132,13 +160,12 @@ class YOLODetectionNode(Node):
             detection_msg.bbox.center.position.y = float(y)
             detection_msg.bbox.size_x = float(w)
             detection_msg.bbox.size_y = float(h)
-            detection_msg.results = [ObjectHypothesisWithPose(hypothesis=ObjectHypothesis(class_id="Can", score=highest_prob), 
-                                        pose=PoseWithCovariance(pose=Pose(position=Point(x=float(x),y=float(y)))))]
+            detection_msg.results = [
+                ObjectHypothesisWithPose(
+                    hypothesis = ObjectHypothesis(class_id = "Can", score = highest_prob), 
+                    pose = PoseWithCovariance(pose = Pose(position = Point(x = float(x),y = float(y)))))]
             detection_msg.header.stamp = self.get_clock().now().to_msg()
             self.detection_publisher.publish(detection_msg)
-            ros_image = self.bridge.cv2_to_imgmsg(results_image, encoding="rgb8")
-            ros_image.header.frame_id = 'camera_frame'
-            self.image_publisher.publish(ros_image)
         except CvBridgeError as e:
           print(e)
         cv2.waitKey(1)
